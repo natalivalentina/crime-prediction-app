@@ -153,11 +153,12 @@ if menu == "Home":
         st.pyplot(fig)
 
     # Plot 5 – Heatmap per Jenis Kejahatan
-    st.markdown("<p style='font-size:18px; font-weight:600; margin:0;'>5. Heatmap per Jenis Kejahatan</p>", unsafe_allow_html=True)
-
+    st.markdown("""
+    <p style='font-size:18px; font-weight:600; margin-bottom:10px;'>5. Heatmap per Jenis Kejahatan</p>
+    <p style='font-size:16px; margin-top:0px; margin-bottom:4px;'>Pilih jenis kejahatan:</p>
+    """, unsafe_allow_html=True)
+    
     crimes = eda_data["heatmap"]['primary_type'].unique()
-
-    st.markdown("<p class='tight-label'>Pilih jenis kejahatan:</p>", unsafe_allow_html=True)
     selected_crime = st.selectbox("", crimes)
 
     st.markdown("""
