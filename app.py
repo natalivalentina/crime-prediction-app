@@ -37,7 +37,7 @@ def load_reference():
 
 @st.cache_data
 def load_geojson():
-    with open("chicago_community_area.geojson", "r") as f:
+    with open("data/chicago_community_area.geojson", "r") as f:
         return json.load(f)
 
 eda_data = load_eda_data()
