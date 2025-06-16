@@ -99,9 +99,6 @@ with st.sidebar:
             }
         </style>
     """, unsafe_allow_html=True)
-
-    #st.markdown("<p style='font-size:18px; margin-bottom:2px;'>Undergraduate Thesis Project</p>", unsafe_allow_html=True)
-    #st.markdown("<p style='font-size:16px; font-weight:600;'>Created by: Natali Valentina</p>", unsafe_allow_html=True)
     
     # Remove top icon/label by setting title to empty string
     menu = option_menu(
@@ -109,6 +106,16 @@ with st.sidebar:
         options=["Home", "Model Prediction"],
         default_index=0
     )   
+
+    st.markdown("""
+    <hr style='margin-top:30px;margin-bottom:10px;'>
+    <p style='font-size:13px; color: gray;'>
+    <strong>Created by:</strong><br>
+    Natali Valentina Sutanto<br>
+    Data Science, Binus University<br>
+    Skripsi 2024/2025
+    </p>
+    """, unsafe_allow_html=True)
 
 # -----------------------------
 # HOME: VISUALISASI EDA
