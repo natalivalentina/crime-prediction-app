@@ -417,8 +417,20 @@ if menu == "Model Prediction":
     
         # --- Jumlah Kasus yang Akan Terjadi
         st.markdown(f"""
-        <div style='background-color:#ffe3e3; padding:15px; border-radius:10px; font-size:18px; color:#c92a2a; font-weight:500;'>Prediksi: <strong>{predicted_cases} kasus</strong></div>""", unsafe_allow_html=True)
-    
+        <div style='
+            background-color:#ffe3e3;
+            padding:15px;
+            border-radius:10px;
+            font-size:18px;
+            color:#c92a2a;
+            font-weight:500;
+            margin-top:20px;
+            margin-bottom:20px;
+        '>
+            Prediksi: <strong>{predicted_cases} kasus</strong>
+        </div>
+        """, unsafe_allow_html=True)
+        
         # --- Ringkasan Angka Lain
         st.markdown(f"""
         <div style='font-size:19px; line-height:1.8;'>
