@@ -363,7 +363,10 @@ if menu == "Model Prediction":
             'domestic': domestic_rate / 100,
             'hour': peak_hour
         }])
-    
+
+        prediction_log = model.predict(input_df)[0]
+        predicted_cases = int(round(np.expm1(prediction_log)))
+        
         # Predict
         if selected_algo == 'Random Forest':
             try:
@@ -390,9 +393,6 @@ if menu == "Model Prediction":
             model = joblib.load("data/model_xgb.pkl")
         elif selected_algo == 'LightGBM':
             model = joblib.load("data/model_lgbm.pkl")
-    
-        prediction_log = model.predict(input_df)[0]
-        predicted_cases = int(round(np.expm1(prediction_log)))
     
         # --- 5-Year Historical Comparison
         past_5yr = df_model[
