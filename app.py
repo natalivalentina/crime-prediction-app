@@ -297,149 +297,149 @@ if menu == "Model Prediction":
         <p style='font-size: 19px; margin-top: 0;'>Silakan pilih filter input di sebelah kiri untuk melihat hasil prediksi berdasarkan algoritma</p>
         """, unsafe_allow_html=True)
     
-    encoder = load_encoder()
-
-    # Mapping bulan angka ke nama
-    month_dict = {
-        1: "January", 2: "February", 3: "March", 4: "April",
-        5: "May", 6: "June", 7: "July", 8: "August",
-        9: "September", 10: "October", 11: "November", 12: "December"
-    }
-
-    # --- Sidebar Filters ---
-    with st.sidebar:
-        st.markdown("### 🎯 Filter Input")
-        available_years = list(range(2020, 2031))
-        available_months = list(range(1, 13))
-
-        selected_year = st.selectbox('Select a Year', sorted(available_years, reverse=True))
-        month_display = [month_dict[m] for m in available_months]
-        selected_month_display = st.selectbox('Select a Month', month_display)
-        selected_month = [k for k, v in month_dict.items() if v == selected_month_display][0]
-
-        selected_crime = st.selectbox('Select Crime Type', sorted(df_model['primary_type'].dropna().unique()))
-        area_df = df_model[['community_area', 'area_name']].drop_duplicates().sort_values('area_name')
-        selected_area_name = st.selectbox("Select Community Area", area_df['area_name'])
-        selected_area = area_df[area_df['area_name'] == selected_area_name]['community_area'].values[0]
-        selected_algo = st.selectbox('Select Algorithm', ['Random Forest', 'XGBoost', 'LightGBM'])
-
-    # --- Load encoder & model ---
-    encoders = joblib.load("data/encoders.pkl")
-
-    # Load mini raw data untuk feature extraction
-    #df_raw = load_raw_data()
-    df_filtered = df_raw[
-        (df_raw['year'] == selected_year) &
-        (df_raw['month'] == selected_month) &
-        (df_raw['community_area'] == selected_area) &
-        (df_raw['primary_type'] == selected_crime)
-    ]
-
-    # Contextual Feature: Historical or synthetic if future
-    future_year = selected_year > df_model['year'].max()
-    if not df_filtered.empty and not future_year:
-        arrest_rate = round(df_filtered['arrest'].mean() * 100, 1)
-        domestic_rate = round(df_filtered['domestic'].mean() * 100, 1)
-        peak_hour = df_filtered['hour'].mode()[0]
-        hour_bins = pd.cut(df_filtered['hour'], bins=[0, 6, 12, 18, 24],
-                           labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])
-        peak_time = hour_bins.value_counts().idxmax()
-        top_locations = df_filtered['location_description'].value_counts().head(3).index.tolist()
-    else:
-        # Synthetic values (arbitrary defaults + noise)
-        arrest_rate = round(min(max(0.15 + np.random.uniform(-0.02, 0.02), 0), 1) * 100, 1)
-        domestic_rate = round(min(max(0.08 + np.random.uniform(-0.02, 0.02), 0), 1) * 100, 1)
-        peak_hour = 12
-        peak_time = "12PM–6PM"
-        top_locations = ["N/A"]
-
-    # Prepare input for prediction
-    input_df = pd.DataFrame([{
-        'year': selected_year,
-        'month': selected_month,
-        'community_area': selected_area,
-        'primary_type_enc': encoders['primary_type'].transform([selected_crime])[0],
-        'arrest': arrest_rate / 100,
-        'domestic': domestic_rate / 100,
-        'hour': peak_hour
-    }])
-
-    # Predict
-    if selected_algo == 'Random Forest':
-        try:
-            model = load_model("model_rf.pkl")
-            log_pred = model.predict(input_df)[0]
-            pred_cases = int(np.round(np.expm1(log_pred)))
-            st.markdown(f"""
-            <div style='
-                background-color:#ffe3e3;
-                padding:15px;
-                border-radius:10px;
-                font-size:18px;
-                color:#c92a2a;
-                font-weight:500;
-            '>
-                Prediksi: <strong>{predicted_cases} kasus</strong>
-            </div>
-            """, unsafe_allow_html=True)
-
-        except Exception as e:
-            st.error("❌ Error saat memprediksi")
-            st.text(str(e))
-    elif selected_algo == 'XGBoost':
-        model = joblib.load("data/model_xgb.pkl")
-    elif selected_algo == 'LightGBM':
-        model = joblib.load("data/model_lgbm.pkl")
-
-    prediction_log = model.predict(input_df)[0]
-    predicted_cases = int(round(np.expm1(prediction_log)))
-
-    # --- 5-Year Historical Comparison
-    past_5yr = df_model[
-        (df_model['year'] >= selected_year - 5) & (df_model['year'] < selected_year) &
-        (df_model['month'] == selected_month) &
-        (df_model['community_area'] == selected_area) &
-        (df_model['primary_type'] == selected_crime)
-    ]
-    avg_5yr = int(past_5yr['case_count'].mean()) if not past_5yr.empty else 0
-    pct_change = round(((predicted_cases - avg_5yr) / avg_5yr) * 100, 1) if avg_5yr > 0 else 0
-    change_icon = "🔺" if pct_change > 0 else "🔻" if pct_change < 0 else "➖"
-
-    # --- Model Metrics (manual)
-    model_metrics = {
-        "Random Forest": {"mae": 3.62, "smape": 27.75, "r2": 0.93},
-        "XGBoost": {"mae": 4.75, "smape": 33.25, "r2": 0.87},
-        "LightGBM": {"mae": 6.07, "smape": 38.13, "r2": 0.77}
-    }
-    metrics = model_metrics[selected_algo]
-    mae, smape, r2 = metrics['mae'], metrics['smape'], metrics['r2']
-    fit_text = "Strong fit" if r2 >= 0.85 else "Moderate fit" if r2 >= 0.7 else "Weak fit"
-
-    # Display Output
-    st.markdown("<h4 style='margin-top: 20px;'>🔎 Ringkasan Prediksi</h4>", unsafe_allow_html=True)
-
-    # --- Informasi Lokasi dan Algoritma
-    st.markdown(f"""
-    <div style='font-size:19px; line-height:1.6;'>
-    Prediksi untuk <b>{selected_area_name}</b>, bulan <b>{selected_month_display}</b> tahun <b>{selected_year}</b><br>
-    <b>Jenis Kejahatan:</b> {selected_crime.upper()}<br>
-    <b>Algoritma:</b> {selected_algo}
-    </div>
-    """, unsafe_allow_html=True)
-
-    # --- Jumlah Kasus yang Akan Terjadi
-    st.markdown(f"<h4 style='margin-top: 25px;'>🧾 Prediksi Jumlah Kasus yang Akan Terjadi: <span style='color:#d6336c'>{predicted_cases} Kasus</span></h4>", unsafe_allow_html=True)
-
-    # --- Ringkasan Angka Lain
-    st.markdown(f"""
-    <div style='font-size:19px; line-height:1.8;'>
-    <b>● Rata-rata 5 Tahun Terakhir ({selected_month_display}):</b> {avg_5yr} → {change_icon} <b>{abs(pct_change)}%</b><br>
-    <b>● Lokasi yang Paling Banyak Terjadi Kasus:</b> {', '.join(top_locations) if top_locations else 'N/A'}<br>
-    <b>● Waktu Rawan:</b> Pukul {peak_time}<br>
-    <b>● Persentase Tingkat Penangkapan:</b> {arrest_rate}%<br>
-    <b>● Persentase Kasus Domestik:</b> {domestic_rate}%
-    </div>
-    """, unsafe_allow_html=True)
+        encoder = load_encoder()
+    
+        # Mapping bulan angka ke nama
+        month_dict = {
+            1: "January", 2: "February", 3: "March", 4: "April",
+            5: "May", 6: "June", 7: "July", 8: "August",
+            9: "September", 10: "October", 11: "November", 12: "December"
+        }
+    
+        # --- Sidebar Filters ---
+        with st.sidebar:
+            st.markdown("### 🎯 Filter Input")
+            available_years = list(range(2020, 2031))
+            available_months = list(range(1, 13))
+    
+            selected_year = st.selectbox('Select a Year', sorted(available_years, reverse=True))
+            month_display = [month_dict[m] for m in available_months]
+            selected_month_display = st.selectbox('Select a Month', month_display)
+            selected_month = [k for k, v in month_dict.items() if v == selected_month_display][0]
+    
+            selected_crime = st.selectbox('Select Crime Type', sorted(df_model['primary_type'].dropna().unique()))
+            area_df = df_model[['community_area', 'area_name']].drop_duplicates().sort_values('area_name')
+            selected_area_name = st.selectbox("Select Community Area", area_df['area_name'])
+            selected_area = area_df[area_df['area_name'] == selected_area_name]['community_area'].values[0]
+            selected_algo = st.selectbox('Select Algorithm', ['Random Forest', 'XGBoost', 'LightGBM'])
+    
+        # --- Load encoder & model ---
+        encoders = joblib.load("data/encoders.pkl")
+    
+        # Load mini raw data untuk feature extraction
+        #df_raw = load_raw_data()
+        df_filtered = df_raw[
+            (df_raw['year'] == selected_year) &
+            (df_raw['month'] == selected_month) &
+            (df_raw['community_area'] == selected_area) &
+            (df_raw['primary_type'] == selected_crime)
+        ]
+    
+        # Contextual Feature: Historical or synthetic if future
+        future_year = selected_year > df_model['year'].max()
+        if not df_filtered.empty and not future_year:
+            arrest_rate = round(df_filtered['arrest'].mean() * 100, 1)
+            domestic_rate = round(df_filtered['domestic'].mean() * 100, 1)
+            peak_hour = df_filtered['hour'].mode()[0]
+            hour_bins = pd.cut(df_filtered['hour'], bins=[0, 6, 12, 18, 24],
+                               labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])
+            peak_time = hour_bins.value_counts().idxmax()
+            top_locations = df_filtered['location_description'].value_counts().head(3).index.tolist()
+        else:
+            # Synthetic values (arbitrary defaults + noise)
+            arrest_rate = round(min(max(0.15 + np.random.uniform(-0.02, 0.02), 0), 1) * 100, 1)
+            domestic_rate = round(min(max(0.08 + np.random.uniform(-0.02, 0.02), 0), 1) * 100, 1)
+            peak_hour = 12
+            peak_time = "12PM–6PM"
+            top_locations = ["N/A"]
+    
+        # Prepare input for prediction
+        input_df = pd.DataFrame([{
+            'year': selected_year,
+            'month': selected_month,
+            'community_area': selected_area,
+            'primary_type_enc': encoders['primary_type'].transform([selected_crime])[0],
+            'arrest': arrest_rate / 100,
+            'domestic': domestic_rate / 100,
+            'hour': peak_hour
+        }])
+    
+        # Predict
+        if selected_algo == 'Random Forest':
+            try:
+                model = load_model("model_rf.pkl")
+                log_pred = model.predict(input_df)[0]
+                pred_cases = int(np.round(np.expm1(log_pred)))
+                st.markdown(f"""
+                <div style='
+                    background-color:#ffe3e3;
+                    padding:15px;
+                    border-radius:10px;
+                    font-size:18px;
+                    color:#c92a2a;
+                    font-weight:500;
+                '>
+                    Prediksi: <strong>{predicted_cases} kasus</strong>
+                </div>
+                """, unsafe_allow_html=True)
+    
+            except Exception as e:
+                st.error("❌ Error saat memprediksi")
+                st.text(str(e))
+        elif selected_algo == 'XGBoost':
+            model = joblib.load("data/model_xgb.pkl")
+        elif selected_algo == 'LightGBM':
+            model = joblib.load("data/model_lgbm.pkl")
+    
+        prediction_log = model.predict(input_df)[0]
+        predicted_cases = int(round(np.expm1(prediction_log)))
+    
+        # --- 5-Year Historical Comparison
+        past_5yr = df_model[
+            (df_model['year'] >= selected_year - 5) & (df_model['year'] < selected_year) &
+            (df_model['month'] == selected_month) &
+            (df_model['community_area'] == selected_area) &
+            (df_model['primary_type'] == selected_crime)
+        ]
+        avg_5yr = int(past_5yr['case_count'].mean()) if not past_5yr.empty else 0
+        pct_change = round(((predicted_cases - avg_5yr) / avg_5yr) * 100, 1) if avg_5yr > 0 else 0
+        change_icon = "🔺" if pct_change > 0 else "🔻" if pct_change < 0 else "➖"
+    
+        # --- Model Metrics (manual)
+        model_metrics = {
+            "Random Forest": {"mae": 3.62, "smape": 27.75, "r2": 0.93},
+            "XGBoost": {"mae": 4.75, "smape": 33.25, "r2": 0.87},
+            "LightGBM": {"mae": 6.07, "smape": 38.13, "r2": 0.77}
+        }
+        metrics = model_metrics[selected_algo]
+        mae, smape, r2 = metrics['mae'], metrics['smape'], metrics['r2']
+        fit_text = "Strong fit" if r2 >= 0.85 else "Moderate fit" if r2 >= 0.7 else "Weak fit"
+    
+        # Display Output
+        st.markdown("<h4 style='margin-top: 20px;'>🔎 Ringkasan Prediksi</h4>", unsafe_allow_html=True)
+    
+        # --- Informasi Lokasi dan Algoritma
+        st.markdown(f"""
+        <div style='font-size:19px; line-height:1.6;'>
+        Prediksi untuk <b>{selected_area_name}</b>, bulan <b>{selected_month_display}</b> tahun <b>{selected_year}</b><br>
+        <b>Jenis Kejahatan:</b> {selected_crime.upper()}<br>
+        <b>Algoritma:</b> {selected_algo}
+        </div>
+        """, unsafe_allow_html=True)
+    
+        # --- Jumlah Kasus yang Akan Terjadi
+        st.markdown(f"<h4 style='margin-top: 25px;'>🧾 Prediksi Jumlah Kasus yang Akan Terjadi: <span style='color:#d6336c'>{predicted_cases} Kasus</span></h4>", unsafe_allow_html=True)
+    
+        # --- Ringkasan Angka Lain
+        st.markdown(f"""
+        <div style='font-size:19px; line-height:1.8;'>
+        <b>● Rata-rata 5 Tahun Terakhir ({selected_month_display}):</b> {avg_5yr} → {change_icon} <b>{abs(pct_change)}%</b><br>
+        <b>● Lokasi yang Paling Banyak Terjadi Kasus:</b> {', '.join(top_locations) if top_locations else 'N/A'}<br>
+        <b>● Waktu Rawan:</b> Pukul {peak_time}<br>
+        <b>● Persentase Tingkat Penangkapan:</b> {arrest_rate}%<br>
+        <b>● Persentase Kasus Domestik:</b> {domestic_rate}%
+        </div>
+        """, unsafe_allow_html=True)
 
     # --- Judul Evaluasi Model
     st.markdown(f"<h4 style='margin-top: 25px; font-weight:normal;'>Hasil Evaluasi Model: <span style='font-weight:bold'>{selected_algo}</span></h4>", unsafe_allow_html=True)
