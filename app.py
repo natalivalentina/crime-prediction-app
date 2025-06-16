@@ -160,7 +160,7 @@ if menu == "Home":
     <style>
     /* Hilangkan margin atas dari selectbox */
     section[data-testid="stSelectbox"] > div {
-        margin-top: -10px;
+        margin-top: -50px;
     }
     </style>
     """, unsafe_allow_html=True)
