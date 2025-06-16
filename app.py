@@ -113,7 +113,6 @@ if menu == "Home":
     <h3 style='margin-top: 0; margin-bottom: 0;'>Chicago Crime - Dashboard EDA</h3>
     <p style='font-size: 19px; margin-top: 0;'>Analisis umum terhadap tren kejahatan berdasarkan waktu, lokasi, dan jenis kasus</p>
     """, unsafe_allow_html=True)
-    st.dataframe(df_model.head())
 
     col1, col2 = st.columns(2)
     with col1:
@@ -364,7 +363,19 @@ if menu == "Model Prediction":
             model = load_model("model_rf.pkl")
             log_pred = model.predict(input_df)[0]
             pred_cases = int(np.round(np.expm1(log_pred)))
-            st.success(f"Prediksi: {pred_cases} kasus")
+            st.markdown(f"""
+            <div style='
+                background-color:#ffe3e3;
+                padding:15px;
+                border-radius:10px;
+                font-size:18px;
+                color:#c92a2a;
+                font-weight:500;
+            '>
+                Prediksi: <strong>{predicted_cases} kasus</strong>
+            </div>
+            """, unsafe_allow_html=True)
+
         except Exception as e:
             st.error("❌ Error saat memprediksi")
             st.text(str(e))
