@@ -77,6 +77,11 @@ def load_model(model_name):
 def load_encoder():
     return joblib.load(DATA_PATH + "encoders.pkl")
 
+with st.spinner("🔄 Loading dashboard data... please wait."):
+    eda_data = load_eda_data()
+    ca_df = load_reference()
+    geojson_data = load_geojson()
+
 # -----------------------------
 # LOAD DATA
 eda_data = load_eda_data()
@@ -285,6 +290,8 @@ month_dict = {
 # MODEL PREDICTION
 # =========================
 if menu == "Model Prediction":
+    with st.spinner("🔍 Loading prediction page... please wait."):
+    
     st.markdown("""
     <h3 style='margin-top: 0;'>Prediksi Jumlah Kasus Kriminal dengan Machine Learning </h3>
     <p style='font-size: 20px; margin-top: 0;'><strong>Perbandingan implementasi algoritma: Random Forest vs XGBoost vs LightGBM</p>
