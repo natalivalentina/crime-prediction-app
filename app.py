@@ -18,67 +18,72 @@ import os
 st.set_page_config("Chicago Crime Dashboard", "👮", layout="wide")
 
 # -----------------------------
-# LOAD EDA CSV FILES
-@st.cache_data
-def load_eda_data():
-    return {
-        "monthly": pd.read_csv("data/eda_summary.csv"),
-        "top10": pd.read_csv("data/top_10_crimes.csv"),
-        "hourly": pd.read_csv("data/hourly_crime.csv"),
-        "weekday": pd.read_csv("data/weekday_crime.csv"),
-        "heatmap": pd.read_csv("data/heatmap_data.csv"),
-        "geo": pd.read_csv("data/geo_summary.csv")
-    }
-
-@st.cache_data
-def load_reference():
-    ca = pd.read_csv("data/community_area_ref.csv")
-    return ca.rename(columns={"AREA_NUMBE": "community_area", "COMMUNITY": "area_name"})
-
-@st.cache_data
-def load_geojson():
-    with open("data/chicago_community_area.geojson", "r") as f:
-        return json.load(f)
-
-eda_data = load_eda_data()
-ca_df = load_reference()
-geojson_data = load_geojson()
-
-# -----------------------------
-# ✅ Efficient & Safe Downloader
-def download_if_not_exists(file_id, output_path):
+# Define GDrive download helper
+@st.cache_resource
+def download_from_gdrive(file_id, output_path):
     if not os.path.exists(output_path):
         url = f"https://drive.google.com/uc?id={file_id}"
         gdown.download(url, output_path, quiet=False)
 
-# -----------------------------
-# 📁 File IDs and Paths
-model_csv_id = "1Xpc0nxQp0BMLfN4xvG4CmGwm7O1MTMu4"
-raw_csv_id = "1sBj3AvpPibqWKKHq-r0HOmfmrtTuKyZH"
-model_pkl_id = "1IQUSMDlP5M6pltUu1Nkec-92583FIvNy"
+# File IDs from Google Drive
+GDRIVE_FILES = {
+    "model_data_ready.csv": "1Xpc0nxQp0BMLfN4xvG4CmGwm7O1MTMu4",
+    "filtered_data.csv": "1sBj3AvpPibqWKKHq-r0HOmfmrtTuKyZH",
+    "model_rf.pkl": "1IQUSMDlP5M6pltUu1Nkec-92583FIvNy"
+}
 
-model_csv_path = "model_data_ready.csv"
-raw_csv_path = "filtered_data.csv"
-model_pkl_path = "model_rf.pkl"
-
-# -----------------------------
-# ⬇ Download Only If Needed
-download_if_not_exists(model_csv_id, model_csv_path)
-download_if_not_exists(raw_csv_id, raw_csv_path)
-download_if_not_exists(model_pkl_id, model_pkl_path)
+# Download files only if not exist
+for filename, file_id in GDRIVE_FILES.items():
+    download_from_gdrive(file_id, filename)
 
 # -----------------------------
-# 📊 Load the CSVs
+# USE LOCAL & DOWNLOADED FILES
+DATA_PATH = "data/"
+
 @st.cache_data
-def load_csv(path):
-    return pd.read_csv(path)
+def load_eda_data():
+    return {
+        "monthly": pd.read_csv(DATA_PATH + "eda_summary.csv"),
+        "top10": pd.read_csv(DATA_PATH + "top_10_crimes.csv"),
+        "hourly": pd.read_csv(DATA_PATH + "hourly_crime.csv"),
+        "weekday": pd.read_csv(DATA_PATH + "weekday_crime.csv"),
+        "heatmap": pd.read_csv(DATA_PATH + "heatmap_data.csv"),
+        "geo": pd.read_csv(DATA_PATH + "geo_summary.csv")
+    }
 
-df_model = load_csv(model_csv_path)
-df_raw = load_csv(raw_csv_path)
+@st.cache_data
+def load_reference():
+    ca = pd.read_csv(DATA_PATH + "community_area_ref.csv")
+    return ca.rename(columns={"AREA_NUMBE": "community_area", "COMMUNITY": "area_name"})
+
+@st.cache_data
+def load_geojson():
+    with open(DATA_PATH + "chicago_community_area.geojson", "r") as f:
+        return json.load(f)
+
+@st.cache_data
+def load_model_data():
+    return pd.read_csv("model_data_ready.csv")  # from GDrive root
+
+@st.cache_data
+def load_raw_data():
+    return pd.read_csv("filtered_data.csv")  # from GDrive root
+
+@st.cache_resource
+def load_model(model_name):
+    return joblib.load(model_name)  # from GDrive root
+
+@st.cache_resource
+def load_encoder():
+    return joblib.load(DATA_PATH + "encoders.pkl")
 
 # -----------------------------
-# 🤖 Load the Model (no need to cache, only load once)
-model_rf = joblib.load(model_pkl_path)
+# LOAD DATA
+eda_data = load_eda_data()
+ca_df = load_reference()
+geojson_data = load_geojson()
+df_model = load_model_data()
+df_raw = load_raw_data()
 
 # -----------------------------
 with st.sidebar:
@@ -108,6 +113,7 @@ if menu == "Home":
     <h3 style='margin-top: 0; margin-bottom: 0;'>Chicago Crime - Dashboard EDA</h3>
     <p style='font-size: 19px; margin-top: 0;'>Analisis umum terhadap tren kejahatan berdasarkan waktu, lokasi, dan jenis kasus</p>
     """, unsafe_allow_html=True)
+    st.dataframe(df_model.head())
 
     col1, col2 = st.columns(2)
     with col1:
@@ -285,6 +291,7 @@ if menu == "Model Prediction":
     <p style='font-size: 20px; margin-top: 0;'><strong>Perbandingan implementasi algoritma: Random Forest vs XGBoost vs LightGBM</p>
     <p style='font-size: 19px; margin-top: 0;'>Silakan pilih filter input di sebelah kiri untuk melihat hasil prediksi berdasarkan algoritma</p>
     """, unsafe_allow_html=True)
+    encoder = load_encoder()
 
     # Mapping bulan angka ke nama
     month_dict = {
