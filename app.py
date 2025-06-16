@@ -291,12 +291,12 @@ month_dict = {
 # =========================
 if menu == "Model Prediction":
     with st.spinner("🔍 Loading prediction page... please wait."):
+        st.markdown("""
+        <h3 style='margin-top: 0;'>Prediksi Jumlah Kasus Kriminal dengan Machine Learning </h3>
+        <p style='font-size: 20px; margin-top: 0;'><strong>Perbandingan implementasi algoritma: Random Forest vs XGBoost vs LightGBM</strong></p>
+        <p style='font-size: 19px; margin-top: 0;'>Silakan pilih filter input di sebelah kiri untuk melihat hasil prediksi berdasarkan algoritma</p>
+        """, unsafe_allow_html=True)
     
-    st.markdown("""
-    <h3 style='margin-top: 0;'>Prediksi Jumlah Kasus Kriminal dengan Machine Learning </h3>
-    <p style='font-size: 20px; margin-top: 0;'><strong>Perbandingan implementasi algoritma: Random Forest vs XGBoost vs LightGBM</p>
-    <p style='font-size: 19px; margin-top: 0;'>Silakan pilih filter input di sebelah kiri untuk melihat hasil prediksi berdasarkan algoritma</p>
-    """, unsafe_allow_html=True)
     encoder = load_encoder()
 
     # Mapping bulan angka ke nama
