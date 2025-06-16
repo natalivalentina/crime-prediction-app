@@ -363,9 +363,6 @@ if menu == "Model Prediction":
             'domestic': domestic_rate / 100,
             'hour': peak_hour
         }])
-
-        prediction_log = model.predict(input_df)[0]
-        predicted_cases = int(round(np.expm1(prediction_log)))
         
         # Predict
         if selected_algo == 'Random Forest':
@@ -373,18 +370,6 @@ if menu == "Model Prediction":
                 model = load_model("model_rf.pkl")
                 log_pred = model.predict(input_df)[0]
                 pred_cases = int(np.round(np.expm1(log_pred)))
-                st.markdown(f"""
-                <div style='
-                    background-color:#ffe3e3;
-                    padding:15px;
-                    border-radius:10px;
-                    font-size:18px;
-                    color:#c92a2a;
-                    font-weight:500;
-                '>
-                    Prediksi: <strong>{predicted_cases} kasus</strong>
-                </div>
-                """, unsafe_allow_html=True)
     
             except Exception as e:
                 st.error("❌ Error saat memprediksi")
@@ -393,6 +378,9 @@ if menu == "Model Prediction":
             model = joblib.load("data/model_xgb.pkl")
         elif selected_algo == 'LightGBM':
             model = joblib.load("data/model_lgbm.pkl")
+
+        prediction_log = model.predict(input_df)[0]
+        predicted_cases = int(round(np.expm1(prediction_log)))
     
         # --- 5-Year Historical Comparison
         past_5yr = df_model[
@@ -428,7 +416,8 @@ if menu == "Model Prediction":
         """, unsafe_allow_html=True)
     
         # --- Jumlah Kasus yang Akan Terjadi
-        st.markdown(f"<h4 style='margin-top: 25px;'>🧾 Prediksi Jumlah Kasus yang Akan Terjadi: <span style='color:#d6336c'>{predicted_cases} Kasus</span></h4>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='background-color:#ffe3e3; padding:15px; border-radius:10px; font-size:18px; color:#c92a2a; font-weight:500;'>Prediksi: <strong>{predicted_cases} kasus</strong></div>""", unsafe_allow_html=True)
     
         # --- Ringkasan Angka Lain
         st.markdown(f"""
