@@ -159,7 +159,7 @@ if menu == "Home":
     """, unsafe_allow_html=True)
     
     crimes = eda_data["heatmap"]['primary_type'].unique()
-    selected_crime = st.selectbox("", crimes)
+    selected = st.selectbox("", crimes)
 
     st.markdown("""
         <style>
