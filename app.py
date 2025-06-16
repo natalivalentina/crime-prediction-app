@@ -156,28 +156,20 @@ if menu == "Home":
     st.markdown("<p style='font-size:18px; font-weight:600; margin:0;'>5. Heatmap per Jenis Kejahatan</p>", unsafe_allow_html=True)
 
     crimes = eda_data["heatmap"]['primary_type'].unique()
-    # CSS untuk menghilangkan margin atas selectbox
+
+    st.markdown("<p class='tight-label'>Pilih jenis kejahatan:</p>", unsafe_allow_html=True)
+    selected_crime = st.selectbox("", crimes)
+
     st.markdown("""
         <style>
         .tight-label {
             font-size: 18px;
             font-weight: normal;
-            margin-bottom: -12px;
-            line-height: 1;
-        }
-
-        /* Atur selectbox agar tidak punya margin atas */
-        div[data-baseweb="select"] {
-            margin-top: -15px;
+            margin-bottom: 0px;
+            line-height: 1.4;
         }
         </style>
     """, unsafe_allow_html=True)
-
-    # Teks label
-    st.markdown("<div class='tight-label'>Pilih Jenis Kejahatan</div>", unsafe_allow_html=True)
-
-    # Selectbox tanpa label
-    selected = st.selectbox("Pilih Jenis Kejahatan", options=crimes, label_visibility="collapsed")
 
     pivot = eda_data["heatmap"]
     subset = pivot[pivot['primary_type'] == selected].pivot(index="hour", columns="weekday", values="count").fillna(0)
