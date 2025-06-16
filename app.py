@@ -77,18 +77,18 @@ def load_model(model_name):
 def load_encoder():
     return joblib.load(DATA_PATH + "encoders.pkl")
 
-with st.spinner("🔄 Loading dashboard data... please wait."):
+loading_placeholder = st.empty()
+
+with loading_placeholder.container():
+    st.info("🔄 Loading dashboard data... please wait...")
+
     eda_data = load_eda_data()
     ca_df = load_reference()
     geojson_data = load_geojson()
+    df_model = load_model_data()
+    df_raw = load_raw_data()
 
-# -----------------------------
-# LOAD DATA
-eda_data = load_eda_data()
-ca_df = load_reference()
-geojson_data = load_geojson()
-df_model = load_model_data()
-df_raw = load_raw_data()
+loading_placeholder.empty()  # Hapus pesan loading setelah semua selesai
 
 # -----------------------------
 with st.sidebar:
