@@ -166,6 +166,7 @@ if menu == "Home":
         .tight-label {
             font-size: 18px;
             font-weight: normal;
+            margin-top:0px;
             margin-bottom: 0px;
             line-height: 1.4;
         }
