@@ -360,7 +360,14 @@ if menu == "Model Prediction":
 
     # Predict
     if selected_algo == 'Random Forest':
-        model = joblib.load("model_rf.pkl")
+        try:
+            model = load_model("model_rf.pkl")
+            log_pred = model.predict(input_df)[0]
+            pred_cases = int(np.round(np.expm1(log_pred)))
+            st.success(f"Prediksi: {pred_cases} kasus")
+        except Exception as e:
+            st.error("❌ Error saat memprediksi")
+            st.text(str(e))
     elif selected_algo == 'XGBoost':
         model = joblib.load("data/model_xgb.pkl")
     elif selected_algo == 'LightGBM':
