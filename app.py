@@ -155,7 +155,7 @@ if menu == "Home":
     # Plot 5 – Heatmap per Jenis Kejahatan
     st.markdown("""
     <p style='font-size:18px; font-weight:600; margin-bottom:10px;'>5. Heatmap per Jenis Kejahatan</p>
-    <p style='font-size:16px; margin-top:0px; margin-bottom:2px;'>Pilih jenis kejahatan:</p>
+    <p style='font-size:16px; margin-top:0px; margin-bottom:1px;'>Pilih jenis kejahatan:</p>
     """, unsafe_allow_html=True)
     
     crimes = eda_data["heatmap"]['primary_type'].unique()
