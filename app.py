@@ -22,17 +22,17 @@ st.set_page_config("Chicago Crime Dashboard", "👮", layout="wide")
 @st.cache_data
 def load_eda_data():
     return {
-        "monthly": pd.read_csv("eda_summary.csv"),
-        "top10": pd.read_csv("top_10_crimes.csv"),
-        "hourly": pd.read_csv("hourly_crime.csv"),
-        "weekday": pd.read_csv("weekday_crime.csv"),
-        "heatmap": pd.read_csv("heatmap_data.csv"),
-        "geo": pd.read_csv("geo_summary.csv")
+        "monthly": pd.read_csv("data/eda_summary.csv"),
+        "top10": pd.read_csv("data/top_10_crimes.csv"),
+        "hourly": pd.read_csv("data/hourly_crime.csv"),
+        "weekday": pd.read_csv("data/weekday_crime.csv"),
+        "heatmap": pd.read_csv("data/heatmap_data.csv"),
+        "geo": pd.read_csv("data/geo_summary.csv")
     }
 
 @st.cache_data
 def load_reference():
-    ca = pd.read_csv("community_area_ref.csv")
+    ca = pd.read_csv("data/community_area_ref.csv")
     return ca.rename(columns={"AREA_NUMBE": "community_area", "COMMUNITY": "area_name"})
 
 @st.cache_data
@@ -222,7 +222,7 @@ if menu == "Home":
 
     try:
         # Load GeoJSON
-        gdf_ca = gpd.read_file("chicago_community_area.geojson")
+        gdf_ca = gpd.read_file("data/chicago_community_area.geojson")
         gdf_ca = gdf_ca.rename(columns={"area_numbe": "community_area"})
         gdf_ca["community_area"] = gdf_ca["community_area"].astype(int)
 
@@ -311,7 +311,7 @@ if menu == "Model Prediction":
         selected_algo = st.selectbox('Select Algorithm', ['Random Forest', 'XGBoost', 'LightGBM'])
 
     # --- Load encoder & model ---
-    encoders = joblib.load("encoders.pkl")
+    encoders = joblib.load("data/encoders.pkl")
 
     # Load mini raw data untuk feature extraction
     #df_raw = load_raw_data()
@@ -355,9 +355,9 @@ if menu == "Model Prediction":
     if selected_algo == 'Random Forest':
         model = joblib.load("model_rf.pkl")
     elif selected_algo == 'XGBoost':
-        model = joblib.load("model_xgb.pkl")
+        model = joblib.load("data/model_xgb.pkl")
     elif selected_algo == 'LightGBM':
-        model = joblib.load("model_lgbm.pkl")
+        model = joblib.load("data/model_lgbm.pkl")
 
     prediction_log = model.predict(input_df)[0]
     predicted_cases = int(round(np.expm1(prediction_log)))
