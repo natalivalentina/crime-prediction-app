@@ -77,6 +77,10 @@ def load_model(model_name):
 def load_encoder():
     return joblib.load(DATA_PATH + "encoders.pkl")
 
+@st.cache_data
+def load_historical_lookup():
+    return pd.read_csv("data/historical_lookup.csv")
+
 loading_placeholder = st.empty()
 
 with loading_placeholder.container():
@@ -87,6 +91,7 @@ with loading_placeholder.container():
     geojson_data = load_geojson()
     df_model = load_model_data()
     df_raw = load_raw_data()
+    historical_lookup = load_historical_lookup()
 
 loading_placeholder.empty()  # Hapus pesan loading setelah semua selesai
 
@@ -193,14 +198,12 @@ if menu == "Home":
     weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     subset = subset[weekday_order]
 
-    # Annotate ~30%
     mask = np.full(subset.shape, False)
     indices = np.random.choice(subset.size, size=int(subset.size * 0.3), replace=False)
     mask.flat[indices] = True
     annot_matrix = subset.where(mask).round(0).astype("Int64").astype(str)
     annot_matrix = annot_matrix.where(mask, '')
 
-    # Plot
     fig, ax = plt.subplots(figsize=(8, 5))
     sns.heatmap(
         subset,
@@ -213,24 +216,20 @@ if menu == "Home":
         linecolor='gray'
     )
 
-    # Axis styling
     ax.set_xlabel("Hari", fontsize=8)
     ax.set_ylabel("Jam", fontsize=8)
     ax.tick_params(axis='x', labelrotation=30, labelsize=8)
     ax.tick_params(axis='y', labelrotation=0, labelsize=8)
 
-    # Colorbar
     cbar = ax.collections[0].colorbar
     cbar.ax.tick_params(labelsize=8)
 
     fig.subplots_adjust(top=0.88, bottom=0.20)
 
-    # Save image to buffer
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=150, bbox_inches='tight')
     buf.seek(0)
 
-    # Display image in center using Streamlit columns layout
     col1, col2, col3 = st.columns([1, 4, 1])
     with col2:
         st.image(buf)
@@ -286,8 +285,7 @@ if menu == "Home":
     except Exception as e:
         st.error("❌ Gagal menampilkan peta. Pastikan file 'chicago_community_area.geojson' valid dan sesuai.")
         st.text(str(e))
-
-# Tambahkan di bagian awal sebelum if menu ==
+        
 month_dict = {
     1: "Januari", 2: "Februari", 3: "Maret", 4: "April",
     5: "Mei", 6: "Juni", 7: "Juli", 8: "Agustus",
@@ -334,8 +332,6 @@ if menu == "Model Prediction":
         # --- Load encoder & model ---
         encoders = joblib.load("data/encoders.pkl")
     
-        # Load mini raw data untuk feature extraction
-        #df_raw = load_raw_data()
         df_filtered = df_raw[
             (df_raw['year'] == selected_year) &
             (df_raw['month'] == selected_month) &
@@ -354,23 +350,35 @@ if menu == "Model Prediction":
             peak_time = hour_bins.value_counts().idxmax()
             top_locations = df_filtered['location_description'].value_counts().head(3).index.tolist()
         else:
-            # Synthetic values (arbitrary defaults + noise)
-            arrest_rate = round(min(max(0.15 + np.random.uniform(-0.02, 0.02), 0), 1) * 100, 1)
-            domestic_rate = round(min(max(0.08 + np.random.uniform(-0.02, 0.02), 0), 1) * 100, 1)
-            peak_hour = 12
-            peak_time = "12PM–6PM"
-            top_locations = ["N/A"]
-    
-        # Prepare input for prediction
-        input_df = pd.DataFrame([{
-            'year': selected_year,
-            'month': selected_month,
-            'community_area': selected_area,
-            'primary_type_enc': encoders['primary_type'].transform([selected_crime])[0],
-            'arrest': arrest_rate / 100,
-            'domestic': domestic_rate / 100,
-            'hour': peak_hour
-        }])
+            lookup_row = historical_lookup[
+                (historical_lookup['community_area'] == selected_area) &
+                (historical_lookup['primary_type'] == selected_crime)
+            ]
+            
+            if not lookup_row.empty:
+                arrest_rate = round(lookup_row['arrest'].values[0] * 100, 1)
+                domestic_rate = round(lookup_row['domestic'].values[0] * 100, 1)
+                peak_hour = int(lookup_row['hour'].values[0])
+                peak_time = pd.cut([peak_hour], bins=[0, 6, 12, 18, 24],
+                                   labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])[0]
+                top_locations = ["N/A"]
+            else:
+                arrest_rate = 15.0
+                domestic_rate = 8.0
+                peak_hour = 12
+                peak_time = "12PM–6PM"
+                top_locations = ["N/A"]
+            
+                # Prepare input for prediction
+                input_df = pd.DataFrame([{
+                    'year': selected_year,
+                    'month': selected_month,
+                    'community_area': selected_area,
+                    'primary_type_enc': encoders['primary_type'].transform([selected_crime])[0],
+                    'arrest': arrest_rate / 100,
+                    'domestic': domestic_rate / 100,
+                    'hour': peak_hour
+                }])
         
         # Predict
         if selected_algo == 'Random Forest':
@@ -390,7 +398,7 @@ if menu == "Model Prediction":
         prediction_log = model.predict(input_df)[0]
         predicted_cases = int(round(np.expm1(prediction_log)))
     
-        # --- 5-Year Historical Comparison
+        # 5-Year Historical Comparison
         past_5yr = df_model[
             (df_model['year'] >= selected_year - 5) & (df_model['year'] < selected_year) &
             (df_model['month'] == selected_month) &
@@ -401,7 +409,7 @@ if menu == "Model Prediction":
         pct_change = round(((predicted_cases - avg_5yr) / avg_5yr) * 100, 1) if avg_5yr > 0 else 0
         change_icon = "🔺" if pct_change > 0 else "🔻" if pct_change < 0 else "➖"
     
-        # --- Model Metrics (manual)
+        # Model Metrics (manual)
         model_metrics = {
             "Random Forest": {"mae": 3.62, "smape": 27.75, "r2": 0.93},
             "XGBoost": {"mae": 4.75, "smape": 33.25, "r2": 0.87},
@@ -414,7 +422,7 @@ if menu == "Model Prediction":
         # Display Output
         st.markdown("<h4 style='margin-top: 20px;'>🔎 Ringkasan Prediksi</h4>", unsafe_allow_html=True)
     
-        # --- Informasi Lokasi dan Algoritma
+        # Location and Algo Info
         st.markdown(f"""
         <div style='font-size:19px; line-height:1.6;'>
         Prediksi untuk <b>{selected_area_name}</b>, bulan <b>{selected_month_display}</b> tahun <b>{selected_year}</b><br>
@@ -423,7 +431,7 @@ if menu == "Model Prediction":
         </div>
         """, unsafe_allow_html=True)
     
-        # --- Jumlah Kasus yang Akan Terjadi
+        # Total Predicted Cases
         st.markdown(f"""
         <div style='
             background-color:#ffe3e3;
@@ -439,7 +447,7 @@ if menu == "Model Prediction":
         </div>
         """, unsafe_allow_html=True)
         
-        # --- Ringkasan Angka Lain
+        # Others Summary
         st.markdown(f"""
         <div style='font-size:19px; line-height:1.8;'>
         <b>● Rata-rata 5 Tahun Terakhir ({selected_month_display}):</b> {avg_5yr} → {change_icon} <b>{abs(pct_change)}%</b><br>
@@ -450,10 +458,10 @@ if menu == "Model Prediction":
         </div>
         """, unsafe_allow_html=True)
 
-    # --- Judul Evaluasi Model
+    # Model Evaluation
     st.markdown(f"<h4 style='margin-top: 25px; font-weight:normal;'>Hasil Evaluasi Model: <span style='font-weight:bold'>{selected_algo}</span></h4>", unsafe_allow_html=True)
 
-    # --- Metric Cards
+    # Metric Cards
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown(f"""
@@ -465,8 +473,8 @@ if menu == "Model Prediction":
     with col2:
         st.markdown(f"""
         <div style='background-color:#f9f9fa; padding:18px; border-radius:12px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.05);'>
-            <p style='margin:0; font-size:18px; color:#6c757d;'>SMAPE</p>
-            <p style='margin:0; font-size:24px; font-weight:bold; color:#ffa94d;'>{smape:.2f}%</p>
+            <p style='margin:0; font-size:18px; color:#6c757d;'>RMSE</p>
+            <p style='margin:0; font-size:24px; font-weight:bold; color:#ffa94d;'>{rmse:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
     with col3:
@@ -477,7 +485,7 @@ if menu == "Model Prediction":
         </div>
         """, unsafe_allow_html=True)
 
-    # --- Bar Chart
+    # Bar Chart
     st.markdown(f"<h4 style='margin-top: 24px;'>Prediksi vs Rata-rata 5 Tahun</span></h4>", unsafe_allow_html=True)
 
     comparison_df = pd.DataFrame({
