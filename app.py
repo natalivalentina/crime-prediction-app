@@ -60,7 +60,12 @@ def load_reference():
 def load_geojson():
     with open(DATA_PATH + "chicago_community_area.geojson", "r") as f:
         return json.load(f)
-
+        
+@st.cache_data
+def load_raw_data():
+    df = pd.read_csv("data/crime_data.csv")  # sesuaikan path file data kamu
+    return df
+    
 @st.cache_data
 def load_model_data():
     return pd.read_csv("model_data_ready.csv")  # from GDrive root
