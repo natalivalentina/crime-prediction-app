@@ -60,12 +60,7 @@ def load_reference():
 def load_geojson():
     with open(DATA_PATH + "chicago_community_area.geojson", "r") as f:
         return json.load(f)
-        
-@st.cache_data
-def load_raw_data():
-    df = pd.read_csv("filtered_data.csv") 
-    return df
-    
+
 @st.cache_data
 def load_model_data():
     return pd.read_csv("model_data_ready.csv")  # from GDrive root
@@ -80,7 +75,7 @@ def load_encoder():
 
 @st.cache_data
 def load_historical_lookup():
-    return joblib.load("data/historical_lookup.pkl")
+    return pd.read_csv("data/historical_lookup.csv")
 
 loading_placeholder = st.empty()
 
