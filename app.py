@@ -65,6 +65,10 @@ def load_geojson():
 def load_model_data():
     return pd.read_csv("model_data_ready.csv")  # from GDrive root
 
+@st.cache_data
+def load_raw_data():
+    return pd.read_csv("filtered_data.csv")  # from GDrive root
+    
 @st.cache_resource
 def load_model(model_name):
     return joblib.load(model_name)  # from GDrive root
