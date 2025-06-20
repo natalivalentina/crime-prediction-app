@@ -469,13 +469,3 @@ if menu == "Model Prediction":
             <p style='margin:0; font-size:24px; font-weight:bold; color:#51cf66;'>{r2:.2f}</p>
         </div>
         """, unsafe_allow_html=True)
-
-    # Bar Chart
-    st.markdown(f"<h4 style='margin-top: 24px;'>Prediksi vs Rata-rata 5 Tahun</span></h4>", unsafe_allow_html=True)
-
-    comparison_df = pd.DataFrame({
-        "Kategori": ["Prediksi", "Rata-rata 5 Tahun"],
-        "Jumlah Kasus": [predicted_cases, avg_5yr]
-    })
-    fig_bar = px.bar(comparison_df, x="Kategori", y="Jumlah Kasus", color="Kategori", color_discrete_sequence=["#1f77b4", "#ff7f0e"])
-    st.plotly_chart(fig_bar, use_container_width=True)
