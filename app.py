@@ -344,10 +344,14 @@ if menu == "Model Prediction":
         if not df_filtered.empty and not future_year:
             arrest_rate = round(df_filtered['arrest'].mean() * 100, 1)
             domestic_rate = round(df_filtered['domestic'].mean() * 100, 1)
-            peak_hour = df_filtered['hour'].mode()[0]
-            hour_bins = pd.cut(df_filtered['hour'], bins=[0, 6, 12, 18, 24],
-                               labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])
-            peak_time = hour_bins.value_counts().idxmax()
+            if df_filtered['hour'].notna().any():
+                peak_hour = int(df_filtered['hour'].mode()[0])
+                hour_bins = pd.cut(df_filtered['hour'], bins=[0, 6, 12, 18, 24],
+                                   labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])
+                if not hour_bins.empty and hour_bins.notna().any():
+                    peak_time = hour_bins.value_counts().idxmax()
+            else:
+                peak_time = "N/A"
             top_locations = df_filtered['location_description'].value_counts().head(3).index.tolist()
         else:
             lookup_row = historical_lookup[
@@ -390,18 +394,7 @@ if menu == "Model Prediction":
 
         prediction_log = model.predict(input_df)[0]
         predicted_cases = int(round(np.expm1(prediction_log)))
-    
-        # 5-Year Historical Comparison
-        past_5yr = df_model[
-            (df_model['year'] >= selected_year - 5) & (df_model['year'] < selected_year) &
-            (df_model['month'] == selected_month) &
-            (df_model['community_area'] == selected_area) &
-            (df_model['primary_type'] == selected_crime)
-        ]
-        avg_5yr = int(past_5yr['case_count'].mean()) if not past_5yr.empty else 0
-        pct_change = round(((predicted_cases - avg_5yr) / avg_5yr) * 100, 1) if avg_5yr > 0 else 0
-        change_icon = "🔺" if pct_change > 0 else "🔻" if pct_change < 0 else "➖"
-    
+
         # Model Metrics (manual)
         model_metrics = {
             "Random Forest": {"mae": 3.62, "rmse": 4.12, "r2": 0.93},
@@ -443,7 +436,6 @@ if menu == "Model Prediction":
         # Others Summary
         st.markdown(f"""
         <div style='font-size:19px; line-height:1.8;'>
-        <b>● Rata-rata 5 Tahun Terakhir ({selected_month_display}):</b> {avg_5yr} → {change_icon} <b>{abs(pct_change)}%</b><br>
         <b>● Lokasi yang Paling Banyak Terjadi Kasus:</b> {', '.join(top_locations) if top_locations else 'N/A'}<br>
         <b>● Waktu Rawan:</b> Pukul {peak_time}<br>
         <b>● Persentase Tingkat Penangkapan:</b> {arrest_rate}%<br>
