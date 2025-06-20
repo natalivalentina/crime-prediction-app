@@ -382,14 +382,7 @@ if menu == "Model Prediction":
         
         # Predict
         if selected_algo == 'Random Forest':
-            try:
-                model = load_model("model_rf.pkl")
-                log_pred = model.predict(input_df)[0]
-                pred_cases = int(np.round(np.expm1(log_pred)))
-    
-            except Exception as e:
-                st.error("❌ Error saat memprediksi")
-                st.text(str(e))
+            model = load_model("model_rf.pkl")
         elif selected_algo == 'XGBoost':
             model = joblib.load("data/model_xgb.pkl")
         elif selected_algo == 'LightGBM':
@@ -411,12 +404,12 @@ if menu == "Model Prediction":
     
         # Model Metrics (manual)
         model_metrics = {
-            "Random Forest": {"mae": 3.62, "smape": 27.75, "r2": 0.93},
-            "XGBoost": {"mae": 4.75, "smape": 33.25, "r2": 0.87},
-            "LightGBM": {"mae": 6.07, "smape": 38.13, "r2": 0.77}
+            "Random Forest": {"mae": 3.62, "rmse": 4.12, "r2": 0.93},
+            "XGBoost": {"mae": 4.75, "rmse": 5.33, "r2": 0.87},
+            "LightGBM": {"mae": 6.07, "rmse": 6.97, "r2": 0.77}
         }
         metrics = model_metrics[selected_algo]
-        mae, smape, r2 = metrics['mae'], metrics['smape'], metrics['r2']
+        mae, rmse, r2 = metrics['mae'], metrics['rmse'], metrics['r2']
         fit_text = "Strong fit" if r2 >= 0.85 else "Moderate fit" if r2 >= 0.7 else "Weak fit"
     
         # Display Output
