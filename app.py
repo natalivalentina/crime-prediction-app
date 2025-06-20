@@ -63,7 +63,7 @@ def load_geojson():
         
 @st.cache_data
 def load_raw_data():
-    df = pd.read_csv("data/filtered_data.csv") 
+    df = pd.read_csv("filtered_data.csv") 
     return df
     
 @st.cache_data
