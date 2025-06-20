@@ -369,16 +369,16 @@ if menu == "Model Prediction":
                 peak_time = "12PM–6PM"
                 top_locations = ["N/A"]
             
-                # Prepare input for prediction
-                input_df = pd.DataFrame([{
-                    'year': selected_year,
-                    'month': selected_month,
-                    'community_area': selected_area,
-                    'primary_type_enc': encoders['primary_type'].transform([selected_crime])[0],
-                    'arrest': arrest_rate / 100,
-                    'domestic': domestic_rate / 100,
-                    'hour': peak_hour
-                }])
+        # Prepare input for prediction
+        input_df = pd.DataFrame([{
+            'year': selected_year,
+            'month': selected_month,
+            'community_area': selected_area,
+            'primary_type_enc': encoders['primary_type'].transform([selected_crime])[0],
+            'arrest': arrest_rate / 100,
+            'domestic': domestic_rate / 100,
+            'hour': peak_hour
+        }])
         
         # Predict
         if selected_algo == 'Random Forest':
