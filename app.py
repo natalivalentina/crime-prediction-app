@@ -79,7 +79,7 @@ def load_encoder():
 
 @st.cache_data
 def load_historical_lookup():
-    return pd.read_csv("data/historical_lookup.csv")
+    return joblib.load("data/historical_lookup.pkl")
 
 loading_placeholder = st.empty()
 
