@@ -365,13 +365,14 @@ if menu == "Model Prediction":
                 peak_hour = int(lookup_row['hour'].values[0])
                 peak_time = pd.cut([peak_hour], bins=[0, 6, 12, 18, 24],
                                    labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])[0]
-                top_locations = ["N/A"]
+                top_locations = json.loads(lookup_row['top_locations'].values[0])
             else:
-                arrest_rate = 15.0
-                domestic_rate = 8.0
-                peak_hour = 12
-                peak_time = "12PM–6PM"
-                top_locations = ["N/A"]
+                arrest_rate = 12.0  # misal rata-rata umum
+                domestic_rate = 7.5
+                peak_hour = 14
+                peak_time = pd.cut([peak_hour], bins=[0, 6, 12, 18, 24],
+                                   labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])[0]
+                top_locations = ["STREET", "RESIDENCE", "APARTMENT"]
             
         # Prepare input for prediction
         input_df = pd.DataFrame([{
