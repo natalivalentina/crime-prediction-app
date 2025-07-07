@@ -12,3 +12,4 @@ lightgbm
 streamlit-option-menu
 plotly
 gdown
+json
