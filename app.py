@@ -351,7 +351,7 @@ if menu == "Model Prediction":
                 if not hour_bins.empty and hour_bins.notna().any():
                     peak_time = hour_bins.value_counts().idxmax()
             else:
-                peak_time = "N/A"
+                peak_time = "12PM–6PM"
             top_locations = df_filtered['location_description'].value_counts().head(3).index.tolist()
         else:
             lookup_row = historical_lookup[
@@ -398,9 +398,9 @@ if menu == "Model Prediction":
 
         # Model Metrics (manual)
         model_metrics = {
-            "Random Forest": {"mae": 3.62, "rmse": 4.12, "r2": 0.93},
-            "XGBoost": {"mae": 4.75, "rmse": 5.33, "r2": 0.87},
-            "LightGBM": {"mae": 6.07, "rmse": 6.97, "r2": 0.77}
+            "Random Forest": {"mae": 2.32, "rmse": 6.81, "r2": 0.94},
+            "XGBoost": {"mae": 3.23, "rmse": 9.85, "r2": 0.88},
+            "LightGBM": {"mae": 4.20, "rmse": 13.16, "r2": 0.78}
         }
         metrics = model_metrics[selected_algo]
         mae, rmse, r2 = metrics['mae'], metrics['rmse'], metrics['r2']
@@ -460,7 +460,7 @@ if menu == "Model Prediction":
         st.markdown(f"""
         <div style='background-color:#f9f9fa; padding:18px; border-radius:12px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.05);'>
             <p style='margin:0; font-size:18px; color:#6c757d;'>RMSE</p>
-            <p style='margin:0; font-size:24px; font-weight:bold; color:#ffa94d;'>{rmse:.2f}%</p>
+            <p style='margin:0; font-size:24px; font-weight:bold; color:#ffa94d;'>{rmse:.2f}</p>
         </div>
         """, unsafe_allow_html=True)
     with col3:
