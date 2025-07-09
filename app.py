@@ -350,7 +350,10 @@ if menu == "Model Prediction":
                                    labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])
                 if not hour_bins.empty and hour_bins.notna().any():
                     peak_time = hour_bins.value_counts().idxmax()
+                else:
+                    peak_time = "12PM–6PM"
             else:
+                peak_hour = 14
                 peak_time = "12PM–6PM"
             top_locations = df_filtered['location_description'].value_counts().head(3).index.tolist()
         else:
@@ -362,9 +365,17 @@ if menu == "Model Prediction":
             if not lookup_row.empty:
                 arrest_rate = round(lookup_row['arrest'].values[0] * 100, 1)
                 domestic_rate = round(lookup_row['domestic'].values[0] * 100, 1)
-                peak_hour = int(lookup_row['hour'].values[0])
+                try:
+                    peak_hour = int(lookup_row['hour'].values[0])
+                except:
+                    peak_hour = 14  # default: jam 14 → 12PM–6PM
+                
                 peak_time = pd.cut([peak_hour], bins=[0, 6, 12, 18, 24],
                                    labels=["12AM–6AM", "6AM–12PM", "12PM–6PM", "6PM–12AM"])[0]
+                
+                if pd.isna(peak_time):
+                    peak_time = "12PM–6PM"
+
                 top_locations = json.loads(lookup_row['top_locations'].values[0])
             else:
                 arrest_rate = 12.0  # misal rata-rata umum
