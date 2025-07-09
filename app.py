@@ -315,7 +315,7 @@ if menu == "Model Prediction":
         # --- Sidebar Filters ---
         with st.sidebar:
             st.markdown("### 🎯 Filter Input")
-            available_years = list(range(2020, 2026))
+            available_years = list(range(2020, 2027))
             available_months = list(range(1, 13))
     
             selected_year = st.selectbox('Select a Year', sorted(available_years, reverse=True))
